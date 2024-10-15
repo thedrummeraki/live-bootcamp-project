@@ -6,5 +6,5 @@ async fn main() {
         .await
         .expect("Failed to build app");
 
-    app.run().await.expect("Failed to run app")
+    app.run().await.expect("Failed to run app");
 }
