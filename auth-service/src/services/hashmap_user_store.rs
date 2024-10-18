@@ -1,24 +1,18 @@
 use std::collections::HashMap;
 
-use crate::domain::user::User;
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    UnexpectedError,
-}
+use crate::domain::{
+    data_stores::user::{UserStore, UserStoreError, UserStoreResult},
+    user::User,
+};
 
 #[derive(Default)]
 pub struct HashmapUserStore {
     pub users: HashMap<String, User>,
 }
 
-type HashmapUserStoreResult<T> = Result<T, UserStoreError>;
-
-impl HashmapUserStore {
-    pub fn add_user(&mut self, user: User) -> HashmapUserStoreResult<()> {
+#[async_trait::async_trait]
+impl UserStore for HashmapUserStore {
+    fn add_user(&mut self, user: User) -> UserStoreResult<()> {
         let email = user.clone().email;
         if self.get_user(&email).is_ok() {
             return Err(UserStoreError::UserAlreadyExists);
@@ -28,14 +22,14 @@ impl HashmapUserStore {
         Ok(())
     }
 
-    pub fn get_user(&self, email: &str) -> HashmapUserStoreResult<User> {
+    fn get_user(&self, email: &str) -> UserStoreResult<User> {
         self.users
             .get(email)
             .cloned()
             .ok_or(UserStoreError::UserNotFound)
     }
 
-    pub fn validate_user(&self, email: &str, password: &str) -> HashmapUserStoreResult<()> {
+    fn validate_user(&self, email: &str, password: &str) -> UserStoreResult<()> {
         let user = self.get_user(email)?;
         if user.password != password {
             return Err(UserStoreError::InvalidCredentials);

@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::AppState,
-    domain::{error::AuthAPIError, user::User},
-    services::hashmap_user_store::UserStoreError,
+    domain::{data_stores::user::UserStoreError, error::AuthAPIError, user::User},
 };
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
