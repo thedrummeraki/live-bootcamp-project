@@ -8,11 +8,18 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(signup_request: SignupRequest) -> Self {
-        Self {
-            email: signup_request.email,
-            password: signup_request.password,
-            requires_2fa: signup_request.requires_2fa,
+    pub fn new(signup_request: SignupRequest) -> Option<Self> {
+        let email = signup_request.email.trim().to_owned();
+        let password = signup_request.password.to_owned();
+
+        if email.is_empty() || !email.contains("@") || password.len() < 8 {
+            return None;
         }
+
+        Some(Self {
+            email,
+            password,
+            requires_2fa: signup_request.requires_2fa,
+        })
     }
 }
