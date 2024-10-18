@@ -3,7 +3,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::AppState,
-    domain::{data_stores::user::UserStoreError, error::AuthAPIError, user::User},
+    domain::{
+        data_stores::user::UserStoreError,
+        error::AuthAPIError,
+        user::{Email, Password, User},
+    },
 };
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
@@ -15,21 +19,32 @@ pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let user = User::new(request).ok_or(AuthAPIError::InvalidCredentials)?;
+    let email =
+        Email::parse(request.email.to_owned()).map_err(map_user_store_error_to_api_error)?;
+
+    let password =
+        Password::parse(request.password.to_owned()).map_err(map_user_store_error_to_api_error)?;
+
+    let user = User::new(email, password, request.requires_2fa);
     let mut user_store = state.user_store.write().await;
-    if let Err(error) = user_store.add_user(user) {
-        match error {
-            UserStoreError::UserAlreadyExists => return Err(AuthAPIError::UserAlreadyExists),
-            UserStoreError::InvalidCredentials => return Err(AuthAPIError::InvalidCredentials),
-            _ => return Err(AuthAPIError::UnexpectedError),
-        }
-    }
+
+    user_store
+        .add_user(user)
+        .map_err(map_user_store_error_to_api_error)?;
 
     let response = Json(SignupResponse {
         message: "User created successfully!".into(),
     });
 
     Ok((StatusCode::CREATED, response))
+}
+
+fn map_user_store_error_to_api_error(user_error: UserStoreError) -> AuthAPIError {
+    match user_error {
+        UserStoreError::InvalidCredentials => AuthAPIError::InvalidCredentials,
+        UserStoreError::UserAlreadyExists => AuthAPIError::UserAlreadyExists,
+        _ => AuthAPIError::UnexpectedError,
+    }
 }
 
 #[derive(Deserialize)]

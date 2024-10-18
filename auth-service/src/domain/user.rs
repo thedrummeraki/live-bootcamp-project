@@ -1,25 +1,107 @@
-use crate::routes::SignupRequest;
+use super::data_stores::user::UserStoreError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct User {
-    pub email: String,
-    pub password: String,
+    pub email: Email,
+    pub password: Password,
     pub requires_2fa: bool,
 }
 
 impl User {
-    pub fn new(signup_request: SignupRequest) -> Option<Self> {
-        let email = signup_request.email.trim().to_owned();
-        let password = signup_request.password.to_owned();
-
-        if email.is_empty() || !email.contains("@") || password.len() < 8 {
-            return None;
-        }
-
-        Some(Self {
+    pub fn new(email: Email, password: Password, requires_2fa: bool) -> Self {
+        Self {
             email,
             password,
-            requires_2fa: signup_request.requires_2fa,
-        })
+            requires_2fa,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Email(String);
+
+impl Email {
+    pub fn parse<S: AsRef<str>>(value: S) -> Result<Self, UserStoreError> {
+        let str: &str = value.as_ref();
+        if str.is_empty() || !str.contains("@") {
+            return Err(UserStoreError::InvalidCredentials);
+        }
+
+        Ok(Self(str.into()))
+    }
+}
+
+impl AsRef<str> for Email {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Password(String);
+
+impl Password {
+    pub fn parse<S: AsRef<str>>(value: S) -> Result<Self, UserStoreError> {
+        let str: &str = value.as_ref();
+        if str.len() < 8 {
+            return Err(UserStoreError::InvalidCredentials);
+        }
+
+        Ok(Self(str.into()))
+    }
+}
+
+impl AsRef<str> for Password {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Email, Password};
+
+    #[test]
+    fn should_return_email_ok_when_properly_parsed() {
+        let results = [
+            Email::parse("some@value.com"),
+            Email::parse("some.other@value.com"),
+            Email::parse("some-value123@value.com"),
+        ];
+
+        assert!(results.iter().all(|r| r.is_ok()))
+    }
+
+    #[test]
+    fn should_return_email_err_when_not_properly_parsed() {
+        let results = [Email::parse("some]value.com"), Email::parse("")];
+
+        assert!(results.iter().all(|r| r.is_err()))
+    }
+
+    #[test]
+    fn should_return_password_ok_when_properly_parsed() {
+        let results = [
+            Password::parse("password"),
+            Password::parse("some long passphrase that should also work"),
+        ];
+
+        assert!(results.iter().all(|r| r.is_ok()))
+    }
+
+    #[test]
+    fn should_return_password_err_when_not_properly_parsed() {
+        let results = [
+            Password::parse(""),
+            Password::parse("1"),
+            Password::parse("12"),
+            Password::parse("123"),
+            Password::parse("1234"),
+            Password::parse("12345"),
+            Password::parse("123456"),
+            Password::parse("1234567"),
+        ];
+
+        assert!(results.iter().all(|r| r.is_err()))
     }
 }
