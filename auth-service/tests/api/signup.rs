@@ -75,14 +75,12 @@ async fn should_return_400_if_invalid_input() {
     for body in invalid_bodies.iter() {
         let response = app.post_signup(&body).await;
         assert_eq!(response.status().as_u16(), 400);
-        assert_eq!(
-            response
-                .json::<ErrorResponse>()
-                .await
-                .expect("Could not deserialized body to ErrorResponse")
-                .error,
-            "Invalid credentials".to_owned()
-        )
+        let error = response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Could not deserialized body to ErrorResponse")
+            .error;
+        assert!(error.contains("Invalid credentials: "))
     }
 }
 
