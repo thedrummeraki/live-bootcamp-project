@@ -32,7 +32,9 @@ impl UserStore for HashmapUserStore {
     fn validate_user(&self, email: Email, password: Password) -> UserStoreResult<()> {
         let user = self.get_user(email)?;
         if user.password != password {
-            return Err(UserStoreError::InvalidCredentials);
+            return Err(UserStoreError::InvalidCredentials(
+                "Passwords do not match".into(),
+            ));
         }
         Ok(())
     }

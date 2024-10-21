@@ -4,7 +4,7 @@ use crate::domain::user::{Email, Password, User};
 pub enum UserStoreError {
     UserAlreadyExists,
     UserNotFound,
-    InvalidCredentials,
+    InvalidCredentials(String),
     UnexpectedError,
 }
 

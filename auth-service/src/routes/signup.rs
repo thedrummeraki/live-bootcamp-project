@@ -41,7 +41,7 @@ pub async fn signup(
 
 fn map_user_store_error_to_api_error(user_error: UserStoreError) -> AuthAPIError {
     match user_error {
-        UserStoreError::InvalidCredentials => AuthAPIError::InvalidCredentials,
+        UserStoreError::InvalidCredentials(details) => AuthAPIError::InvalidCredentials(details),
         UserStoreError::UserAlreadyExists => AuthAPIError::UserAlreadyExists,
         _ => AuthAPIError::UnexpectedError,
     }

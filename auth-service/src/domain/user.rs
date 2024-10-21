@@ -24,7 +24,9 @@ impl Email {
     pub fn parse<S: AsRef<str>>(value: S) -> Result<Self, UserStoreError> {
         let str: &str = value.as_ref();
         if str.is_empty() || !str.contains("@") {
-            return Err(UserStoreError::InvalidCredentials);
+            return Err(UserStoreError::InvalidCredentials(
+                "Invalid email address".into(),
+            ));
         }
 
         Ok(Self(str.into()))
@@ -44,7 +46,9 @@ impl Password {
     pub fn parse<S: AsRef<str>>(value: S) -> Result<Self, UserStoreError> {
         let str: &str = value.as_ref();
         if str.len() < 8 {
-            return Err(UserStoreError::InvalidCredentials);
+            return Err(UserStoreError::InvalidCredentials(
+                "Password too short (must have 8 chars or more)".into(),
+            ));
         }
 
         Ok(Self(str.into()))
