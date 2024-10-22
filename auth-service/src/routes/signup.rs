@@ -4,11 +4,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
     app_state::AppState,
     domain::{
-        data_stores::user::UserStoreError,
         error::AuthAPIError,
         user::{Email, Password, User},
     },
 };
+
+use super::utils::map_user_store_error_to_api_error;
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct SignupResponse {
@@ -37,14 +38,6 @@ pub async fn signup(
     });
 
     Ok((StatusCode::CREATED, response))
-}
-
-fn map_user_store_error_to_api_error(user_error: UserStoreError) -> AuthAPIError {
-    match user_error {
-        UserStoreError::InvalidCredentials(details) => AuthAPIError::InvalidCredentials(details),
-        UserStoreError::UserAlreadyExists => AuthAPIError::UserAlreadyExists,
-        _ => AuthAPIError::UnexpectedError,
-    }
 }
 
 #[derive(Deserialize)]

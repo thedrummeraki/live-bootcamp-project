@@ -1,6 +1,7 @@
 mod login;
 mod logout;
 mod signup;
+pub mod utils;
 mod verify_2fa;
 mod verify_token;
 

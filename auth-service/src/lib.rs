@@ -31,6 +31,10 @@ impl IntoResponse for AuthAPIError {
                 ("Invalid credentials: ".to_owned() + details.as_str()).into(),
             ),
             AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists".into()),
+            AuthAPIError::IncorrectCredentials => (
+                StatusCode::UNAUTHORIZED,
+                "Access to server limitted or no access granted.".into(),
+            ),
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error".into())
             }
