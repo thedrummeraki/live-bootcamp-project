@@ -1,11 +1,22 @@
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
+use jsonwebtoken::{
+    decode, encode, errors::Error as JwtError, DecodingKey, EncodingKey, Validation,
+};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::user::Email;
+use crate::{
+    app_state::BannedTokenStoreType,
+    domain::{data_stores::token::BannedTokenState, user::Email},
+};
 
 use super::constants::{JWT_COOKIE_NAME, JWT_SECRET};
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum TokenValidationError {
+    JwtError(JwtError),
+    BannedTokenError,
+}
 
 // Create cookie with a new JWT auth token
 pub fn generate_auth_cookie(email: &Email) -> Result<Cookie<'static>, GenerateTokenError> {
@@ -57,13 +68,28 @@ fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
 }
 
 // Check if JWT auth token is valid by decoding it using the JWT secret
-pub async fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
-    decode::<Claims>(
+pub async fn validate_token(
+    token: &str,
+    banned_token_store: BannedTokenStoreType,
+) -> Result<Claims, TokenValidationError> {
+    let claims = decode::<Claims>(
         token,
         &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
         &Validation::default(),
     )
     .map(|data| data.claims)
+    .map_err(TokenValidationError::JwtError)?;
+
+    if let BannedTokenState::Exists(email) = banned_token_store.read().await.verify(token) {
+        let decoded_email =
+            Email::parse(claims.sub.clone()).expect("Could not parse email address from claim");
+
+        if decoded_email == email {
+            return Err(TokenValidationError::BannedTokenError);
+        }
+    }
+
+    Ok(claims)
 }
 
 // Create JWT auth token by encoding claims using the JWT secret
@@ -83,6 +109,8 @@ pub struct Claims {
 
 #[cfg(test)]
 mod tests {
+    use crate::{services::hashmap_banned_token_store::HashmapBannedTokenStore, utils::ThreadSafe};
+
     use super::*;
 
     #[tokio::test]
@@ -118,7 +146,9 @@ mod tests {
     async fn test_validate_token_with_valid_token() {
         let email = Email::parse("test@example.com".to_owned()).unwrap();
         let token = generate_auth_token(&email).unwrap();
-        let result = validate_token(&token).await.unwrap();
+        let result = validate_token(&token, HashmapBannedTokenStore::thread_safe())
+            .await
+            .unwrap();
         assert_eq!(result.sub, "test@example.com");
 
         let exp = Utc::now()
@@ -132,7 +162,7 @@ mod tests {
     #[tokio::test]
     async fn test_validate_token_with_invalid_token() {
         let token = "invalid_token".to_owned();
-        let result = validate_token(&token).await;
+        let result = validate_token(&token, HashmapBannedTokenStore::thread_safe()).await;
         assert!(result.is_err());
     }
 }
