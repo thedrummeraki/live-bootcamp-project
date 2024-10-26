@@ -52,7 +52,7 @@ async fn validate_login_request(
     let email = Email::parse(email).map_err(map_user_store_error_to_api_error)?;
     let password = Password::parse(password).map_err(map_user_store_error_to_api_error)?;
 
-    let user_store = state.user_store.read().await;
+    let user_store = state.user_store.write().await;
 
     user_store
         .validate_user(email.to_owned(), password)

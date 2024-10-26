@@ -1,7 +1,6 @@
-use auth_service::utils::constants::JWT_COOKIE_NAME;
 use serde_json::json;
 
-use crate::helpers::{get_random_email, TestApp};
+use crate::helpers::{get_random_email, ResponseExt, TestApp};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
@@ -10,7 +9,7 @@ async fn should_return_422_if_malformed_credentials() {
     let malformed_body = json!({});
     let response = app.post_login(&malformed_body).await;
 
-    assert_eq!(response.status().as_u16(), 422);
+    assert_eq!(response.status_code(), 422);
 }
 
 #[tokio::test]
@@ -27,7 +26,7 @@ async fn should_return_400_if_invalid_input() {
 
     for body_ref in bodies {
         let response = app.post_login(body_ref).await;
-        assert_eq!(response.status().as_u16(), 400);
+        assert_eq!(response.status_code(), 400);
     }
 }
 
@@ -41,7 +40,7 @@ async fn should_return_401_if_incorrect_credentials() {
         .post_login(&json!({"email": "unknown@email.com", "password": "password"}))
         .await;
 
-    assert_eq!(response.status().as_u16(), 401);
+    assert_eq!(response.status_code(), 401);
 }
 
 #[tokio::test]
@@ -58,7 +57,7 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
 
     let response = app.post_signup(&signup_body).await;
 
-    assert_eq!(response.status().as_u16(), 201);
+    assert_eq!(response.status_code(), 201);
 
     let login_body = serde_json::json!({
         "email": random_email,
@@ -67,12 +66,9 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
 
     let response = app.post_login(&login_body).await;
 
-    assert_eq!(response.status().as_u16(), 200);
+    assert_eq!(response.status_code(), 200);
 
-    let auth_cookie = response
-        .cookies()
-        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
-        .expect("No auth cookie found");
+    let auth_cookie = response.get_auth_cookie().expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
 }

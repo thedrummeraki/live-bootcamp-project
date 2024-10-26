@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
 use auth_service::{
-    app_state::AppState, services::hashmap_user_store::HashmapUserStore, utils::constants::test,
+    app_state::AppState,
+    services::hashmap_user_store::HashmapUserStore,
+    utils::constants::{test, JWT_COOKIE_NAME},
     Application,
 };
-use reqwest::cookie::Jar;
+use reqwest::cookie::{Cookie, Jar};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -100,4 +102,20 @@ impl TestApp {
 
 pub fn get_random_email() -> String {
     format!("{}@example.com", Uuid::new_v4())
+}
+
+pub trait ResponseExt {
+    fn get_auth_cookie(&self) -> Option<Cookie>;
+    fn status_code(&self) -> u16;
+}
+
+impl ResponseExt for reqwest::Response {
+    fn get_auth_cookie(&self) -> Option<Cookie> {
+        self.cookies()
+            .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+    }
+
+    fn status_code(&self) -> u16 {
+        self.status().as_u16()
+    }
 }

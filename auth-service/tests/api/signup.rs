@@ -1,7 +1,7 @@
 use auth_service::{routes::SignupResponse, ErrorResponse};
 use serde_json::json;
 
-use crate::helpers::{get_random_email, TestApp};
+use crate::helpers::{get_random_email, ResponseExt, TestApp};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -33,7 +33,7 @@ async fn should_return_422_if_malformed_input() {
     for test_case in test_cases.iter() {
         let response = app.post_signup(test_case).await;
         assert_eq!(
-            response.status().as_u16(),
+            response.status_code(),
             422,
             "Failed for input: {:?}",
             test_case
@@ -52,7 +52,7 @@ async fn should_return_201_if_valid_input() {
 
     let response = app.post_signup(&body).await;
 
-    assert_eq!(response.status().as_u16(), 201);
+    assert_eq!(response.status_code(), 201);
     assert_eq!(
         response
             .json::<SignupResponse>()
@@ -74,7 +74,7 @@ async fn should_return_400_if_invalid_input() {
 
     for body in invalid_bodies.iter() {
         let response = app.post_signup(&body).await;
-        assert_eq!(response.status().as_u16(), 400);
+        assert_eq!(response.status_code(), 400);
         let error = response
             .json::<ErrorResponse>()
             .await
@@ -92,7 +92,7 @@ async fn should_return_409_if_email_alredy_exists() {
     app.post_signup(&body).await;
 
     let response = app.post_signup(&body).await;
-    assert_eq!(response.status().as_u16(), 409);
+    assert_eq!(response.status_code(), 409);
     assert_eq!(
         response
             .json::<ErrorResponse>()
