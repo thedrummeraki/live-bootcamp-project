@@ -9,9 +9,10 @@ use axum::{
     Json, Router,
 };
 use domain::error::AuthAPIError;
+use reqwest::Method;
 use routes::{login, logout, signup, verify_2fa, verify_token};
 use serde::{Deserialize, Serialize};
-use tower_http::services::ServeDir;
+use tower_http::{cors::CorsLayer, services::ServeDir};
 
 pub mod app_state;
 pub mod domain;
@@ -36,6 +37,8 @@ impl IntoResponse for AuthAPIError {
                 StatusCode::UNAUTHORIZED,
                 "Access to server limitted or no access granted.".into(),
             ),
+            AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing token".into()),
+            AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid token".into()),
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error".into())
             }
@@ -55,6 +58,16 @@ pub struct Application {
 
 impl Application {
     pub async fn build(state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
+        let allowed_origins = [
+            "http://localhost:8000".parse()?,
+            "http://37.184.163.199".parse()?,
+        ];
+
+        let cors = CorsLayer::new()
+            .allow_methods([Method::GET, Method::POST])
+            .allow_credentials(true)
+            .allow_origin(allowed_origins);
+
         let router = Router::new()
             .nest_service("/", ServeDir::new("assets"))
             .route("/signup", post(signup))
@@ -62,7 +75,8 @@ impl Application {
             .route("/verify-2fa", post(verify_2fa))
             .route("/logout", post(logout))
             .route("/verify-token", post(verify_token))
-            .with_state(state);
+            .with_state(state)
+            .layer(cors);
 
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
