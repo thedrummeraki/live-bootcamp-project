@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use auth_service::{
-    app_state::{AppState, BannedTokenStoreType},
+    app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
     services::{
-        hashmap_banned_token_store::HashmapBannedTokenStore, hashmap_user_store::HashmapUserStore,
+        hashmap_banned_token_store::HashmapBannedTokenStore,
+        hashmap_two_fa_code_store::HashmapTwoFACodeStore, hashmap_user_store::HashmapUserStore,
     },
     utils::{
         constants::{test, JWT_COOKIE_NAME},
@@ -19,16 +20,19 @@ pub struct TestApp {
     pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
     pub banned_token_store: BannedTokenStoreType,
+    pub two_fa_code_store: TwoFACodeStoreType,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = HashmapUserStore::thread_safe();
         let banned_token_store = HashmapBannedTokenStore::thread_safe();
+        let two_fa_code_store = HashmapTwoFACodeStore::thread_safe();
 
         let app_state = AppState::default()
             .user_store(user_store)
-            .banned_token_store(banned_token_store.clone());
+            .banned_token_store(banned_token_store.clone())
+            .two_fa_code_store(two_fa_code_store.clone());
 
         let app = Application::build(app_state, test::APP_ADDRESS)
             .await
@@ -50,6 +54,7 @@ impl TestApp {
             cookie_jar,
             http_client,
             banned_token_store,
+            two_fa_code_store,
         }
     }
 

@@ -33,6 +33,13 @@ impl Email {
     }
 }
 
+#[cfg(test)]
+impl Default for Email {
+    fn default() -> Self {
+        Self::parse("email@email.com").unwrap()
+    }
+}
+
 impl AsRef<str> for Email {
     fn as_ref(&self) -> &str {
         &self.0

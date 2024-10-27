@@ -103,7 +103,7 @@ fn create_token(claims: &Claims) -> Result<String, jsonwebtoken::errors::Error> 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,
+    pub sub: String, // equivalent to email address
     pub exp: usize,
 }
 

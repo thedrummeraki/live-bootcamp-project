@@ -1,3 +1,5 @@
+use crate::utils::auth::GenerateTokenError;
+
 #[derive(Debug)]
 pub enum AuthAPIError {
     UserAlreadyExists,
@@ -5,5 +7,6 @@ pub enum AuthAPIError {
     IncorrectCredentials,
     MissingToken,
     InvalidToken,
+    GenerateTokenError(GenerateTokenError),
     UnexpectedError,
 }

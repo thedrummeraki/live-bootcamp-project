@@ -30,7 +30,7 @@ impl IntoResponse for AuthAPIError {
         let (status, error_message): (StatusCode, String) = match self {
             AuthAPIError::InvalidCredentials(details) => (
                 StatusCode::BAD_REQUEST,
-                ("Invalid credentials: ".to_owned() + details.as_str()).into(),
+                format!("Invalid credentials: {details}"),
             ),
             AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists".into()),
             AuthAPIError::IncorrectCredentials => (
@@ -39,6 +39,10 @@ impl IntoResponse for AuthAPIError {
             ),
             AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing token".into()),
             AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid token".into()),
+            AuthAPIError::GenerateTokenError(e) => (
+                StatusCode::BAD_REQUEST,
+                format!("Generate token error: {e:?}"),
+            ),
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error".into())
             }

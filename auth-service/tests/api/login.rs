@@ -1,3 +1,7 @@
+use auth_service::{
+    domain::{data_stores::twofa::LoginAttemptId, user::Email},
+    routes::TwoFactorAuthResponse,
+};
 use serde_json::json;
 
 use crate::helpers::{get_random_email, ResponseExt, TestApp};
@@ -48,7 +52,6 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     let app = TestApp::new().await;
 
     let random_email = get_random_email();
-
     let signup_body = serde_json::json!({
         "email": random_email,
         "password": "password123",
@@ -56,7 +59,6 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     });
 
     let response = app.post_signup(&signup_body).await;
-
     assert_eq!(response.status_code(), 201);
 
     let login_body = serde_json::json!({
@@ -65,10 +67,49 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     });
 
     let response = app.post_login(&login_body).await;
-
     assert_eq!(response.status_code(), 200);
 
     let auth_cookie = response.get_auth_cookie().expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+}
+
+#[tokio::test]
+async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
+    let app = TestApp::new().await;
+
+    let random_email = get_random_email();
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+        "requires2FA": true
+    });
+
+    let response = app.post_signup(&signup_body).await;
+    assert_eq!(response.status_code(), 201);
+
+    let login_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+    });
+
+    let response = app.post_login(&login_body).await;
+    assert_eq!(response.status_code(), 206);
+
+    let response_body = response
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to TwoFactorAuthResponse");
+    assert_eq!(response_body.message, "2FA required".to_owned());
+
+    let two_fa_store = app.two_fa_code_store.read().await;
+    let (stored_login_attempt_id, _) = two_fa_store
+        .get_code(&Email::parse(random_email).unwrap())
+        .await
+        .expect("Code for email not properly stored!");
+
+    let returned_login_attempt_id = LoginAttemptId::parse(response_body.login_attempt_id)
+        .expect("Code for email not properly formated!");
+
+    assert_eq!(stored_login_attempt_id, returned_login_attempt_id)
 }
