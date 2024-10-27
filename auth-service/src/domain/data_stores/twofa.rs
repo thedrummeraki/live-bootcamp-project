@@ -73,3 +73,9 @@ impl Default for TwoFACode {
         Self(nums.iter().take(6).map(|num| num.to_string()).collect())
     }
 }
+
+impl AsRef<str> for TwoFACode {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}

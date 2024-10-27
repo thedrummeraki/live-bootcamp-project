@@ -8,5 +8,6 @@ pub enum AuthAPIError {
     MissingToken,
     InvalidToken,
     GenerateTokenError(GenerateTokenError),
+    BadInput(String),
     UnexpectedError,
 }

@@ -43,6 +43,10 @@ impl IntoResponse for AuthAPIError {
                 StatusCode::BAD_REQUEST,
                 format!("Generate token error: {e:?}"),
             ),
+            AuthAPIError::BadInput(details) => (
+                StatusCode::BAD_REQUEST,
+                format!("Bad input. Details: {details}"),
+            ),
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error".into())
             }
