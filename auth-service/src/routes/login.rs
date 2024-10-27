@@ -85,17 +85,31 @@ async fn handle_2fa(
     jar: CookieJar,
 ) -> Result<(CookieJar, (StatusCode, Json<LoginResponse>)), AuthAPIError> {
     let mut two_fa_code_store = state.two_fa_code_store.write().await;
+    let email_client = state.email_client.read().await;
 
     let login_attempt_id = LoginAttemptId::default();
     let two_fa_code = TwoFACode::default();
 
     two_fa_code_store
-        .add_code(email.to_owned(), login_attempt_id.clone(), two_fa_code)
+        .add_code(
+            email.to_owned(),
+            login_attempt_id.clone(),
+            two_fa_code.clone(),
+        )
         .await
         .map_err(|e| {
             println!("[ERROR] Unexpected error while trying to store 2FA code: {e:?}");
             AuthAPIError::UnexpectedError
         })?;
+
+    email_client.send_email(
+        email,
+        "[2FA] Login request to the best Auth system :p",
+        &format!("For security reason, you identity must be verified by entering the following code: {:?}", two_fa_code)
+    ).await.map_err(|e| {
+        println!("Unable to send email. Details: {e:?}");
+        AuthAPIError::UnexpectedError
+    })?;
 
     let response = TwoFactorAuthResponse {
         login_attempt_id: login_attempt_id.as_ref().into(),
