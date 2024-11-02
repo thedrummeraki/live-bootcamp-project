@@ -115,7 +115,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_generate_auth_cookie() {
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse("test@example.com").unwrap();
         let cookie = generate_auth_cookie(&email).unwrap();
         assert_eq!(cookie.name(), JWT_COOKIE_NAME);
         assert_eq!(cookie.value().split('.').count(), 3);
@@ -126,8 +126,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_auth_cookie() {
-        let token = "test_token".to_owned();
-        let cookie = create_auth_cookie(token.clone());
+        let token = "test_token";
+        let cookie = create_auth_cookie(token.to_owned());
         assert_eq!(cookie.name(), JWT_COOKIE_NAME);
         assert_eq!(cookie.value(), token);
         assert_eq!(cookie.path(), Some("/"));
@@ -137,14 +137,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_generate_auth_token() {
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse("test@example.com").unwrap();
         let result = generate_auth_token(&email).unwrap();
         assert_eq!(result.split('.').count(), 3);
     }
 
     #[tokio::test]
     async fn test_validate_token_with_valid_token() {
-        let email = Email::parse("test@example.com".to_owned()).unwrap();
+        let email = Email::parse("test@example.com").unwrap();
         let token = generate_auth_token(&email).unwrap();
         let result = validate_token(&token, HashmapBannedTokenStore::thread_safe())
             .await

@@ -23,7 +23,7 @@ pub struct Email(String);
 impl Email {
     pub fn parse<S: AsRef<str>>(value: S) -> Result<Self, UserStoreError> {
         let str: &str = value.as_ref();
-        if str.is_empty() || !str.contains("@") {
+        if str.is_empty() || !str.contains('@') {
             return Err(UserStoreError::InvalidCredentials(
                 "Invalid email address".into(),
             ));

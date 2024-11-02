@@ -53,7 +53,7 @@ pub struct TwoFACode(String);
 
 impl TwoFACode {
     pub fn parse(code: String) -> Result<Self, String> {
-        let digits: String = code.chars().filter(|c| c.is_digit(10)).collect();
+        let digits: String = code.chars().filter(|c| c.is_ascii_digit()).collect();
         if digits.len() == 6 {
             Ok(Self(code))
         } else {

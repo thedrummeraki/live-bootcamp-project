@@ -73,7 +73,7 @@ async fn handle_regular(
     email: &Email,
     jar: CookieJar,
 ) -> Result<(CookieJar, (StatusCode, Json<LoginResponse>)), AuthAPIError> {
-    let cookie = generate_auth_cookie(&email).map_err(AuthAPIError::GenerateTokenError)?;
+    let cookie = generate_auth_cookie(email).map_err(AuthAPIError::GenerateTokenError)?;
     let jar = jar.add(cookie);
 
     Ok((jar, (StatusCode::OK, Json(LoginResponse::RegularAuth))))

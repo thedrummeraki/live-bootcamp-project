@@ -27,7 +27,7 @@ pub struct ErrorResponse {
 
 impl IntoResponse for AuthAPIError {
     fn into_response(self) -> Response {
-        let (status, error_message): (StatusCode, String) = match self {
+        let (status, error): (StatusCode, String) = match self {
             AuthAPIError::InvalidCredentials(details) => (
                 StatusCode::BAD_REQUEST,
                 format!("Invalid credentials: {details}"),
@@ -52,9 +52,7 @@ impl IntoResponse for AuthAPIError {
             }
         };
 
-        let body = Json(ErrorResponse {
-            error: error_message.into(),
-        });
+        let body = Json(ErrorResponse { error });
         (status, body).into_response()
     }
 }
