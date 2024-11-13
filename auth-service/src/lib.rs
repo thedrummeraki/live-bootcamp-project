@@ -12,6 +12,7 @@ use domain::error::AuthAPIError;
 use reqwest::Method;
 use routes::{login, logout, signup, verify_2fa, verify_token};
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
 pub mod app_state;
@@ -95,4 +96,12 @@ impl Application {
         println!("listening on {}", &self.address);
         self.server.await
     }
+}
+
+pub async fn get_postgres_pool(url: &str) -> Result<sqlx::PgPool, sqlx::Error> {
+    // Create a new PostgreSQL connection pool
+    sqlx::postgres::PgPoolOptions::new()
+        .max_connections(5)
+        .connect(url)
+        .await
 }
