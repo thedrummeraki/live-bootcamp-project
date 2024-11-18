@@ -12,9 +12,9 @@ pub struct HashmapUserStore {
 
 #[async_trait::async_trait]
 impl UserStore for HashmapUserStore {
-    fn add_user(&mut self, user: User) -> UserStoreResult<()> {
+    async fn add_user(&mut self, user: User) -> UserStoreResult<()> {
         let email = user.clone().email;
-        if self.get_user(email.to_owned()).is_ok() {
+        if self.get_user(email.to_owned()).await.is_ok() {
             return Err(UserStoreError::UserAlreadyExists);
         }
 
@@ -22,15 +22,15 @@ impl UserStore for HashmapUserStore {
         Ok(())
     }
 
-    fn get_user(&self, email: Email) -> UserStoreResult<User> {
+    async fn get_user(&self, email: Email) -> UserStoreResult<User> {
         self.users
             .get(&email)
             .cloned()
             .ok_or(UserStoreError::UserNotFound)
     }
 
-    fn validate_user(&self, email: Email, password: Password) -> UserStoreResult<()> {
-        let user = self.get_user(email)?;
+    async fn validate_user(&self, email: Email, password: Password) -> UserStoreResult<()> {
+        let user = self.get_user(email).await?;
         if user.password != password {
             return Err(UserStoreError::InvalidCredentials(
                 "Passwords do not match".into(),
@@ -56,10 +56,10 @@ mod tests {
         };
         let other_user = user.clone();
 
-        let result = store.add_user(user);
+        let result = store.add_user(user).await;
         assert!(result.is_ok());
 
-        let result = store.add_user(other_user);
+        let result = store.add_user(other_user).await;
         assert_eq!(result.err().unwrap(), UserStoreError::UserAlreadyExists)
     }
 
@@ -73,12 +73,13 @@ mod tests {
             requires_2fa: true,
         };
 
-        store.add_user(user.clone()).unwrap();
-        assert_eq!(user, store.get_user(email).unwrap());
+        store.add_user(user.clone()).await.unwrap();
+        assert_eq!(user, store.get_user(email).await.unwrap());
         assert_eq!(
             UserStoreError::UserNotFound,
             store
                 .get_user(Email::parse("unknown@email.com").unwrap())
+                .await
                 .unwrap_err()
         );
     }
@@ -93,8 +94,10 @@ mod tests {
             password: password.to_owned(),
             requires_2fa: true,
         };
-        store.add_user(user.clone()).unwrap();
-        let result = store.validate_user(email.to_owned(), password.to_owned());
+        store.add_user(user.clone()).await.unwrap();
+        let result = store
+            .validate_user(email.to_owned(), password.to_owned())
+            .await;
         assert!(result.is_ok());
 
         let error = store
@@ -102,6 +105,7 @@ mod tests {
                 Email::parse("invalid@email.com").unwrap(),
                 password.to_owned(),
             )
+            .await
             .unwrap_err();
         assert_eq!(error, UserStoreError::UserNotFound);
     }

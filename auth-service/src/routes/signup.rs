@@ -29,6 +29,7 @@ pub async fn signup(
 
     user_store
         .add_user(user)
+        .await
         .map_err(map_user_store_error_to_api_error)?;
 
     let response = Json(SignupResponse {

@@ -56,10 +56,12 @@ pub async fn login(
 
     user_store
         .validate_user(email.to_owned(), password)
+        .await
         .map_err(map_user_store_error_to_api_error)?;
 
     let user = user_store
         .get_user(email.to_owned())
+        .await
         .map_err(map_user_store_error_to_api_error)?;
 
     if user.requires_2fa {

@@ -12,7 +12,7 @@ pub type UserStoreResult<T> = Result<T, UserStoreError>;
 
 #[async_trait::async_trait]
 pub trait UserStore: Send + Sync {
-    fn add_user(&mut self, user: User) -> UserStoreResult<()>;
-    fn get_user(&self, email: Email) -> UserStoreResult<User>;
-    fn validate_user(&self, email: Email, password: Password) -> UserStoreResult<()>;
+    async fn add_user(&mut self, user: User) -> UserStoreResult<()>;
+    async fn get_user(&self, email: Email) -> UserStoreResult<User>;
+    async fn validate_user(&self, email: Email, password: Password) -> UserStoreResult<()>;
 }
